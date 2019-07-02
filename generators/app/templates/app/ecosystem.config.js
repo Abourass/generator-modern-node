@@ -5,8 +5,8 @@ require('dotenv').config();
 module.exports = {
   apps: [
     {
-      name: 'projectName',
-      script: './services/server.js',
+      name: '<%= appName %>',
+      script: './bin/server.js',
       instances: process.env.WEB_CONCURRENCY || 1,
       exec_mode: 'cluster',
       max_memory_restart: '512M',
@@ -14,11 +14,11 @@ module.exports = {
       watch: false,
       env: {
         NODE_ENV: 'development',
-        DEV: 'projectName:server',
+        DEV: '<%= appName %>:server',
       },
       env_production: {
         NODE_ENV: 'production',
-        DEV: 'projectName:server',
+        DEV: '<%= appName %>:server',
       },
     },
   ],
