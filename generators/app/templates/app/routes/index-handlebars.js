@@ -12,7 +12,7 @@ const {ensureAuthenticated} = require('../helpers/auth');
 const User = mongoose.model('users');
 
 
-router.get('/dashboard', csrfProtection, ensureAuthenticated, (req, res) => {
+router.get('/', csrfProtection, (req, res) => {
   try {
     res.render('index/dashboard', {
       csrfToken: req.csrfToken(), // ============================| This create the unique csrfToken that we add to a hidden input to prevent Cross-Site Request Forgery
@@ -22,3 +22,5 @@ router.get('/dashboard', csrfProtection, ensureAuthenticated, (req, res) => {
     console.error(err);
   }
 });
+
+module.exports = router;

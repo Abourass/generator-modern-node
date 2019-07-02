@@ -16,7 +16,7 @@ const debug = require('debug')('<%= appName %>:server');
 const logger = require('morgan');
 const rfs = require('rotating-file-stream');
 const chalk = require('chalk');
-<%= appOptionalDependency %>
+<%- appOptionalDependency %>
 
 require('dotenv').config(); // =====================================> dotEnv provides support for our .env file <=============
 const app = express(); // ==========================================> Initialize Express <====================================
@@ -30,27 +30,27 @@ if (env === 'development') { // ====================================> If in dev 
 }
 
 app.use(helmet()); // ==============================================> Helmet middleware <=====================================
-app.use(bodyParser.urlencoded({extended: false})); // ============> Required for CSRF Protection <============================
+app.use(bodyParser.urlencoded({extended: false})); // ==============> Required for CSRF Protection <==========================
 app.use(cookieParser()); // ========================================> Cookie Parser Middleware <==============================
-app.use(csrf({cookie: true})); // ================================> Let CSRF Use Cookies <====================================
-<%= appOptionalModels %>
-const indexRoute = require('./routes/index'); // ========================> Load Routes <===========================================
-<%= appPassport %>
-<%= appMongooseBlock %>
+app.use(csrf({cookie: true})); // ==================================> Let CSRF Use Cookies <==================================
+<%- appOptionalModels %>
+const indexRoute = require('./routes/index'); // ===================> Load Routes <===========================================
+<%- appPassport %>
+<%- appMongooseBlock %>
 function shouldCompress(req, res, next) { // =======================> Compression Middleware <================================
   if (req.headers['x-no-compression']) { return false; } // ========> Don't compress responses w/ no-compression header <=====
   return compression.filter(req, res); // ==========================> fallback to standard filter function <==================
 }
-app.use(compression({threshold: 0, filter: shouldCompress})); // ===============> Compress all responses <=====================
-app.use(logger('dev', {// =======================================> Log Errors to console.error via debug <===================
+app.use(compression({threshold: 0, filter: shouldCompress})); // ===> Compress all responses <================================
+app.use(logger('dev', {// ==========================================> Log Errors to console.error via debug <=================
   skip: function(req, res) { return res.statusCode < 400; },
   stream: {write: msg => debug(chalk.red(msg))},
 }));
 app.use(bodyParser.json()); // =====================================> Body Parser Middleware <=================================
 app.use(methodOverride('_method')); // =============================> Method Override Middleware <=============================
-<%= appHandles %>
-<%= appSession %>
-<%= appFlash %>
+<%- appHandles %>
+<%- appSession %>
+<%- appFlash %>
 app.use(express.static(path.join(__dirname, 'public'), {maxAge: '30 days'})); // ==========> Set static folders <==============
 app.use('/', indexRoute); // ==============================================> Use Routes <===========================================
 app.use((req, res, next) => {
@@ -60,9 +60,9 @@ app.use((err, req, res, next) => { // ==============================> Error Hand
   res.locals.message = err.message; // =============================> set locals, only providing error in development <========
   res.locals.error = (req.app.get('env') === 'development') ? err : {};
   res.status(403);
-  res.send('Error 403'); // render the error page
+  res.send('Error 403');
   res.status(err.status || 500);
-  res.send('Error 500'); // render the error page
+  res.send('Error 500');
   if (!err){ return next(); }
 });
 

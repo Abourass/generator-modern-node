@@ -271,33 +271,36 @@ module.exports = class extends Generator {
             const features = answers.appFeatures;
             if (features.includes('bcryptPassport')) {
               features.push('bcryptjs', 'express-session', 'passport', 'passport-local', 'connect-mongo');
-              optionalPassport = 'require(`./bin/passport`)(passport); // =========================> Passport Config <=================================';
+              optionalPassport = 'require(`./bin/passport`)(passport); // ============================> Passport Config <=======================================';
             }
             features.forEach((feature) => {
               switch (feature) {
                 case 'bcryptjs':
-                  optionalDep += 'const bcryptjs = require(`bcryptjs`);\n';
                   this.npmInstall([`${feature}`]);
                   break;
                 case 'doge-seed':
-                  optionalDep += 'const doge-seed = require(`doge-seed`);\n';
                   this.npmInstall([`${feature}`]);
+                  this.fs.copy(
+                    this.templatePath('app/helpers/dogeSeed.js'),
+                    this.destinationPath('helpers/dogeSeed.js'),
+                  );
                   break;
                 case 'express-session':
-                  optionalDep += 'const session = require(`express-session`);\n';
+                  optionalDep += 'const session = require(\'express-session\');\n';
                   this.npmInstall([`${feature}`]);
                   break;
                 case 'express-handlebars':
-                  optionalDep += 'const exphbs = require(`express-handlebars`);\n';
+                  optionalDep += 'const exphbs = require(\'express-handlebars\');\n';
                   this.npmInstall([`${feature}`]);
-                  optionalHandles = `const {} = require('./helpers/hbs');
-                app.engine('.handlebars', exphbs({
-                  helpers: {},
-                  defaultLayout: 'main',
-                  partialsDir: ['./views/partials/'],
-                  extname: '.handlebars',
-                }));
-                app.set('view engine', 'handlebars');`;
+                  optionalHandles = `
+const {truncate} = require(\'./helpers/hbs\');
+app.engine(\'.handlebars\', exphbs({
+  helpers: {truncate: truncate},
+  defaultLayout: \'main\',
+  partialsDir: [\'./views/partials/\'],
+  extname: \'.handlebars\',
+}));
+  app.set(\'view engine\', \'handlebars\');`;
                   this.fs.copy(
                     this.templatePath('app/helpers/hbs.js'),
                     this.destinationPath('helpers/hbs.js'),
@@ -329,29 +332,47 @@ module.exports = class extends Generator {
                       appName: this.setupAnswers.name,
                     },
                   );
+                  this.fs.copy(
+                    this.templatePath('app/public/img/meme.jpg'),
+                    this.destinationPath('public/img/meme.jpg'),
+                  );
+                  this.fs.copy(
+                    this.templatePath('app/public/img/meme.webp'),
+                    this.destinationPath('public/img/meme.webp'),
+                  );
                   break;
                 case 'passport-local':
                   optionalDep += 'const passportLocal = require(`passport-local`);\n';
                   this.npmInstall([`${feature}`]);
+                  this.fs.copy(
+                    this.templatePath('app/bin/passport.js'),
+                    this.destinationPath('bin/passport.js'),
+                  );
                   break;
                 case 'mongoose':
                   optionalDep += 'const mongoose = require(`mongoose`);\n';
                   this.npmInstall([`${feature}`]);
                   this.npmInstall(['connect-mongo']);
-                  optionalModel = 'const User = require(`./models/User`)'; // =========================⇨ Import Models & Schema <============================";
-                  mongooseBlock = `mongoose.connect(process.env.mongoURI, {useNewUrlParser: true}) // ======> Connect to our Database <==========================
-                .then(() => debug(chalk.blue.inverse(\` The Mongoose is Alive! \`))).catch(err => debug(err));`;
-                  optionalSession = `const sess = {// ==================================================> Create Session Object for Use <==========================
-                secret: 'assetCat',
-                name: 'AssetCatTheWonderCat',
-                resave: false,
-                saveUninitialized: false, // =====================================> The line below this is the session store <===============
-                store: new MongoStore({mongooseConnection: mongoose.connection}),
-                cookie: {path: '/', httpOnly: true, secure: 'auto', maxAge: 60000 * 60 * 24},
-              };
-              app.use(session(sess)); // =========================================> Express session middleware <=============================
-              app.use(passport.initialize()); // =================================> Passport middleware <====================================
-              app.use(passport.session());`;
+                  optionalModel = `
+const User = require(\'./models/User\');     // ======================> Import Models & Schema <===============================
+  `;
+                  mongooseBlock = `
+mongoose.connect(process.env.mongoURI, {useNewUrlParser: true}) // => Connect to our Database <================================
+  .then(() => debug(chalk.blue.inverse(\' The Mongoose is Alive! \'))).catch(err => debug(err));
+  `;
+                  optionalSession = `
+const sess = { // ==================================================> Create Session Object for Use <==========================
+  secret: \'${this.setupAnswers.name}Cat\',
+  name: \'${this.setupAnswers.name}CatTheWonderCat\',
+  resave: false,
+    saveUninitialized: false, // ===================================> The line below this is the session store <===============
+    store: new MongoStore({mongooseConnection: mongoose.connection}),
+    cookie: {path: \'/\', httpOnly: true, secure: \'auto\', maxAge: 60000 * 60 * 24},
+  };
+app.use(session(sess));          // =================================> Express session middleware <=============================
+app.use(passport.initialize());  // =================================> Passport middleware <====================================
+app.use(passport.session());
+    `;
                   this.fs.copy(
                     this.templatePath('api/models/User.js'),
                     this.destinationPath('models/User.js'),
@@ -364,13 +385,15 @@ module.exports = class extends Generator {
                 case 'connect-flash':
                   optionalDep += 'const flash = require(`connect-flash`);\n';
                   this.npmInstall([`${feature}`]);
-                  optionalFlash = `app.use(flash()); // ===============================================> Flash Messaging / Notification middleware <==============
-                app.use((req, res, next) => { // ===================================> Set Global Variables <===================================
-                  res.locals.success_msg = req.flash('success_msg');
-                  res.locals.error_msg = req.flash('error_msg');
-                  res.locals.error = req.flash('error');
-                  next();
-                });`;
+                  optionalFlash = `
+app.use(flash()); // ===============================================> Flash Messaging / Notification middleware <==============
+app.use((req, res, next) => { // ===================================> Set Global Variables <===================================
+  res.locals.success_msg = req.flash(\'success_msg\');
+  res.locals.error_msg = req.flash(\'error_msg\');
+  res.locals.error = req.flash(\'error\');
+  next();
+});
+  `;
                   break;
                 case 'passport':
                   optionalDep += 'const passport = require(`passport`);\n';
