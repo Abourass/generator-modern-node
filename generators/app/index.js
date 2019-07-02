@@ -70,12 +70,12 @@ module.exports = class extends Generator {
         choices: [
           {
             name: 'Advanced Data Structures',
-            value: 'pancake',
+            value: 'anandamide-pancake',
             short: 'A.D.S.',
           },
           {
             name: 'Doge-Seed (Doge Mnemonic Seed Generator)',
-            value: 'doge',
+            value: 'doge-seed',
             short: 'Much Doge',
           },
           {
@@ -134,7 +134,7 @@ module.exports = class extends Generator {
 
     if (this.setupAnswers.projectType === 'api') {
       this.apiAnswers = await this.prompt(apiPrompts).then((answers) => {
-
+        let optionalDep, optionalModel, mongooseBlock;
         const pkgJson = {
           dependencies: {
             "chalk": "^2.4.2",
@@ -147,9 +147,9 @@ module.exports = class extends Generator {
             "ip": "^1.1.5",
             "pm2": "3.5.1",
             "rotating-file-stream": "1.4.1"
+            // TODO: Add Helmet & Morgan
           },
         };
-
         this.fs.copyTpl(
           this.templatePath('api/bin/server.js'),
           this.destinationPath('bin/server.js'),
@@ -176,6 +176,25 @@ module.exports = class extends Generator {
           },
         );
         // Extend or create package.json file in destination path
+        if (answers){
+          const features = answers.apiFeatures;
+          features.forEach((feature) => {
+            this.npmInstall([`${feature}`]);
+            optionalDep += `const ${feature} = require('${feature}');\n`;
+            if (feature === 'mongoose'){
+              optionalModel = "const User = require('./models/User');       // ==========================> Import Models & Schema <============================";
+              mongooseBlock = `mongoose.connect(process.env.mongoURI, {useNewUrlParser: true}) // ======> Connect to our Database <==========================
+  .then(() => debug(chalk.blue.inverse(' The Mongoose is Alive! '))).catch(err => debug(err));`;
+              this.fs.copy(
+                this.templatePath('api/models/User.js'),
+                this.destinationPath('models/User.js'),
+              );
+            } else {
+              optionalModel = '';
+              mongooseBlock = '';
+            }
+          });
+        }
         this.fs.extendJSON(this.destinationPath('package.json'), pkgJson);
         this.fs.copy(
           this.templatePath('api/.travis.yml'),
@@ -189,8 +208,15 @@ module.exports = class extends Generator {
           this.templatePath('api/.gitignore'),
           this.destinationPath('.gitignore'),
         );
-        this.log(
-          yosay(`${this.setupAnswers.name} API Creation has ${chalk.red('started!!!')}`),
+        this.fs.copyTpl(
+          this.templatePath('api/app.js'),
+          this.destinationPath('app.js'),
+          {
+            appName: this.setupAnswers.name,
+            appOptionalDependency: optionalDep,
+            appOptionalModels: optionalModel,
+            appMongooseBlock: mongooseBlock,
+          },
         );
       });
     } else {
@@ -200,13 +226,13 @@ module.exports = class extends Generator {
           this.destinationPath('app/dummyfile.txt'),
         );
         this.log(
-          yosay(`File Copied, App ready now my friend! ${chalk.red('NOW!!!')}`),
+          yosay(`Your App is ready my friend! ${chalk.red('Enjoy!!!')}`),
         );
       });
     }
   }
 
   install() {
-    this.npmInstall().catch(err => this.log(yosay(`Uh Oh!! ${err}`)));
+    this.npmInstall().catch(err => this.log(yosay(`Uh Oh!!\n ${err}`)));
   }
 };
