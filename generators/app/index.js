@@ -74,19 +74,14 @@ module.exports = class extends Generator {
             short: 'A.D.S.',
           },
           {
-            name: 'Mongoose',
-            value: 'mongoose',
-            short: 'Mongoose',
-          },
-          {
             name: 'Doge-Seed (Doge Mnemonic Seed Generator)',
             value: 'doge',
             short: 'Much Doge',
           },
           {
-            name: 'Faker (Create Fake Information)',
-            value: 'faker',
-            short: 'Faker',
+            name: 'Mongoose',
+            value: 'mongoose',
+            short: 'Mongoose',
           },
         ],
       },
@@ -139,6 +134,22 @@ module.exports = class extends Generator {
 
     if (this.setupAnswers.projectType === 'api') {
       this.apiAnswers = await this.prompt(apiPrompts).then((answers) => {
+
+        const pkgJson = {
+          dependencies: {
+            "chalk": "^2.4.2",
+            "compression": "^1.7.4",
+            "cross-env": "^5.2.0",
+            "debug": "^4.1.1",
+            "dotenv": "8.0.0",
+            "express": "4.17.1",
+            "http-errors": "^1.7.2",
+            "ip": "^1.1.5",
+            "pm2": "3.5.1",
+            "rotating-file-stream": "1.4.1"
+          },
+        };
+
         this.fs.copyTpl(
           this.templatePath('api/bin/server.js'),
           this.destinationPath('bin/server.js'),
@@ -164,6 +175,8 @@ module.exports = class extends Generator {
             appAuthor: this.setupAnswers.author,
           },
         );
+        // Extend or create package.json file in destination path
+        this.fs.extendJSON(this.destinationPath('package.json'), pkgJson);
         this.fs.copy(
           this.templatePath('api/.travis.yml'),
           this.destinationPath('.travis.yml'),
